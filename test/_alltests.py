@@ -28,12 +28,10 @@
 #
 ## end license ##
 
-from seecrdeps import includeParentAndDeps       #DO_NOT_DISTRIBUTE
-includeParentAndDeps(__file__)                   #DO_NOT_DISTRIBUTE
-
 from os.path import join, dirname, abspath                          #DO_NOT_DISTRIBUTE
 import os, sys                                                      #DO_NOT_DISTRIBUTE
-srcDir = join(dirname(dirname(__file__)), "src")                    #DO_NOT_DISTRIBUTE
+parentDir = dirname(dirname(__file__))                              #DO_NOT_DISTRIBUTE
+srcDir = join(parentDir, "src")                                     #DO_NOT_DISTRIBUTE
 targetDir = join(srcDir, "root")                                    #DO_NOT_DISTRIBUTE
 retcode = os.system(f"cd {srcDir}; ./build.sh {targetDir}")         #DO_NOT_DISTRIBUTE
 if retcode != 0:                                                    #DO_NOT_DISTRIBUTE
@@ -41,12 +39,17 @@ if retcode != 0:                                                    #DO_NOT_DIST
     sys.exit(1)                                                     #DO_NOT_DISTRIBUTE
 for p, d, f in os.walk(targetDir):                                  #DO_NOT_DISTRIBUTE
     if 'dist-packages' in d:                                        #DO_NOT_DISTRIBUTE
-        sys.path.insert(0, join(targetDir, p, 'dist-packages'))     #DO_NOT_DISTRIBUTE
+        fullDistDir = join(targetDir, p, 'dist-packages')           #DO_NOT_DISTRIBUTE
+        os.symlink(join(fullDistDir, "metastreams_lucene"), join(parentDir, "metastreams_lucene"))                              #DO_NOT_DISTRIBUTE
         break                                                       #DO_NOT_DISTRIBUTE
 
+from seecrdeps import includeParentAndDeps       #DO_NOT_DISTRIBUTE
+includeParentAndDeps(__file__)                   #DO_NOT_DISTRIBUTE
+
+
 import lucene
-import meresco_lucene
-lucene.initVM(classpath=":".join([lucene.CLASSPATH, meresco_lucene.CLASSPATH]))
+import metastreams_lucene
+lucene.initVM(classpath=":".join([lucene.CLASSPATH, metastreams_lucene.CLASSPATH]))
 
 import unittest
 from warnings import simplefilter, filterwarnings

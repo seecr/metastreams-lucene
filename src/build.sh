@@ -40,7 +40,7 @@ fi
 #  - the .so file does not exist
 #  - there are files in the source directory newer than the .so file
 if [ -d "${TARGET}" ]; then
-    SO_FILE=$(find ${TARGET} -name "_meresco_lucene*.so" -type f -print | head -n 1)
+    SO_FILE=$(find ${TARGET} -name "_metastreams_lucene*.so" -type f -print | head -n 1)
     if [ ! -z "${SO_FILE}" ]; then
         NEWER_SRC_FILES=$(find ${MYDIR}/nl -newer ${SO_FILE})
         if [ -z "${NEWER_SRC_FILES}" ]; then
@@ -51,7 +51,7 @@ fi
 
 ./seecr-build-jcc \
     --path=${MYDIR} \
-    --name=metatstreams-lucene \
+    --name=metastreams-lucene \
     --package=nl/metastreams/lucene/py_analysis \
     --jcc=3.10 \
     --lucene=8.9.0 \
