@@ -1,0 +1,153 @@
+#!/bin/bash
+## begin license ##
+#
+# "Metastreams Lucene" is a set of components and tools to integrate Lucene into Metastreams
+#
+# Copyright (C) 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
+#
+# This file is part of "Metastreams Lucene"
+#
+# "Metastreams Lucene" is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# "Metastreams Lucene" is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with "Metastreams Lucene"; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+#
+## end license ##
+
+function show_usage {
+    echo "Usage: $(basename $0)
+    --path=<'src' directory>
+    --name=<package name>
+    --package=<java package path>
+    --jcc=<jcc version>
+    --lucene=<lucene version>
+    --java_home=<jdk path>
+    --target=<output path>"
+}
+
+TEMP=$(getopt \
+    --options "" \
+    --long path::,name::,package::,jcc::,lucene::,target::,java_home:: \
+    -n "$0" -- "$@")
+
+eval set -- "$TEMP"
+while true
+do
+    case "$1" in
+        --path)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) mydir=$2 ; shift 2 ;;
+            esac ;;
+        --name)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) PKGNAME=$2 ; shift 2 ;;
+            esac ;;
+        --package)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) PKGPATH=$2 ; shift 2;;
+            esac ;;
+        --jcc)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) JCC_REQ_VERSION=$2 ; shift 2;;
+            esac ;;
+        --lucene)
+            case "$2" in
+                "") show_usage ; exit 1 ;;
+                *) LUCENE_VERSION=$2 ; shift 2;;
+            esac ;;
+        --target)
+            case "$2" in
+                *) TARGET=$2 ; shift 2;;
+            esac ;;
+        --java_home)
+            case "$2" in
+                "") JAVA_HOME="" ; shift 2;;
+                *) JAVA_HOME=$2 ; shift 2;;
+            esac ;;
+        --) shift ; break ;;
+        *) echo "Unknown option specified." ; exit 1 ;;
+    esac
+done
+
+set -o errexit
+
+if [ -z "${mydir}" -o -z "${PKGNAME}" -o -z "${PKGPATH}" -o -z "${JCC_REQ_VERSION}" -o -z "${LUCENE_VERSION}" -o -z "${TARGET}" ]
+then
+    show_usage
+    exit 1
+fi
+
+test -d "${mydir}" || { echo "${mydir} not found"; exit 1; }
+
+buildDir=$mydir/build
+
+_PKGNAME=$(echo ${PKGNAME} | tr '-' '_')
+
+PYTHON=python3
+pythonVersion=$(${PYTHON} --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
+pythonMajorVersion=$(${PYTHON} -c 'import sys; print(sys.version_info.major)')
+pythonPackagesDir=/usr/lib64/python${pythonVersion}/site-packages
+if [ -f /etc/debian_version ]; then
+    pythonPackagesDir=/usr/lib/python${pythonMajorVersion}/dist-packages
+fi
+
+JCC_VERSION=$(${PYTHON} -c "from jcc.config import VERSION; print(VERSION)")
+if [ "${JCC_VERSION}" != "${JCC_REQ_VERSION}" ]; then
+    echo "JCC ${JCC_REQ_VERSION} is required. ${JCC_VERSION} found."
+    exit 1
+fi
+
+if [ -z "${JAVA_HOME}" ]; then
+    test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
+fi
+if [ -z "${JAVA_HOME}" ]; then
+    echo "Unable to determine JAVA_HOME"
+    exit 0
+fi
+
+if [ ! -d "${JAVA_HOME}" ]; then
+    echo "${JAVA_HOME} does not exist"
+    exit 0
+fi
+
+export JAVA_HOME
+javac=${JAVA_HOME}/bin/javac
+
+luceneJarDir=${pythonPackagesDir}/lucene
+
+classpath=${luceneJarDir}/lucene-core-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-analyzers-common-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-facet-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-queries-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-misc-${LUCENE_VERSION}.jar
+
+
+test -d "${TARGET}" && rm -rf "${TARGET}"
+test -d "${TARGET}" || mkdir "${TARGET}"
+
+rm -rf $buildDir
+mkdir --parents $buildDir
+
+${javac} -cp ${classpath} -d ${buildDir} ${PKGPATH}/*.java
+(cd $buildDir; jar -c nl > $buildDir/${PKGNAME}.jar)
+
+python3 -m jcc.__main__ \
+    --shared \
+    --use_full_names \
+    --import lucene \
+    --arch x86_64 \
+    --jar ${buildDir}/${PKGNAME}.jar \
+    --python ${_PKGNAME} \
+    --build \
+    --install \
+    --root "${TARGET}"
