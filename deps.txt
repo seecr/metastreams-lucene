@@ -1,0 +1,7 @@
+jcc-py3 (>= 3.10+r1891810)
+jcc-py3 (<< 3.101891811)
+openjdk-17-jdk-headless (>= 17.0.4+8)
+openjdk-17-jdk-headless (<< 17.1)
+python3
+liblucene8-java (>= 1:8.9.0)
+liblucene8-java (<< 18.10)
