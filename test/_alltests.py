@@ -2,7 +2,7 @@
 #
 # "Metastreams Lucene" is a set of components and tools to integrate Lucene into Metastreams
 #
-# Copyright (C) 2013-2016, 2019, 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2013-2016, 2019, 2021-2023 Seecr (Seek You Too B.V.) https://seecr.nl
 # Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
 # Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
 # Copyright (C) 2016, 2021 Stichting Kennisnet https://www.kennisnet.nl
@@ -61,6 +61,7 @@ simplefilter('default')
 filterwarnings('ignore', message=r".*has no __module__ attribute.*", category=DeprecationWarning)
 
 from delegatinganalyzertest import DelegatingAnalyzerTest
+from documentutiltest import DocumentUtilTest
 
 if __name__ == '__main__':
     unittest.main()

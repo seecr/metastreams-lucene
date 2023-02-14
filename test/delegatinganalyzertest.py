@@ -2,7 +2,7 @@
 #
 # "Metastreams Lucene" is a set of components and tools to integrate Lucene into Metastreams
 #
-# Copyright (C) 2021-2022 Seecr (Seek You Too B.V.) https://seecr.nl
+# Copyright (C) 2021-2023 Seecr (Seek You Too B.V.) https://seecr.nl
 #
 # This file is part of "Metastreams Lucene"
 #
@@ -28,7 +28,6 @@ from org.apache.lucene.analysis import Analyzer
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 
 from nl.metastreams.lucene.py_analysis import DelegatingAnalyzer
-from nl.metastreams.lucene.py_analysis import DocumentUtil
 
 class DelegatingAnalyzerTest(unittest.TestCase):
 
@@ -37,6 +36,3 @@ class DelegatingAnalyzerTest(unittest.TestCase):
         a = DelegatingAnalyzer(d, 10)
 
         assert 10 == a.getPositionIncrementGap("field1")
-
-    def testDocumentUtil(self):
-        d = DocumentUtil()

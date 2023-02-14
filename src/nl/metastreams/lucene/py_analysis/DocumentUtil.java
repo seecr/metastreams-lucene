@@ -2,7 +2,7 @@
  *
  * "Metastreams Lucene" is a set of components and tools to integrate Lucene into Metastreams
  *
- * Copyright (C) 2013-2017, 2022 Seecr (Seek You Too B.V.) https://seecr.nl
+ * Copyright (C) 2013-2017, 2022-2023 Seecr (Seek You Too B.V.) https://seecr.nl
  * Copyright (C) 2013-2014 Stichting Bibliotheek.nl (BNL) http://www.bibliotheek.nl
  * Copyright (C) 2015-2016 Koninklijke Bibliotheek (KB) http://www.kb.nl
  * Copyright (C) 2016 Stichting Kennisnet http://www.kennisnet.nl
@@ -77,7 +77,7 @@ public class DocumentUtil {
         for (int j=0; j<=i; j++) {
             String fieldname = prefixes[j] + tag;
             doc.add(new TextField(fieldname, value, store, gap, analyzer));
-            if (facets && !prefixes[j].isEmpty()) {
+            if (facets && !prefixes[j].isEmpty() && i == j) {
                 doc.add(new FacetField(fieldname + ".facet", value));
             }
         }
