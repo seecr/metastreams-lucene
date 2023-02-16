@@ -67,7 +67,7 @@ public class DocumentUtil {
         for (int j=0; j<=i; j++) {
             String fieldname = prefixes[j] + tag;
             doc.add(new StringField(fieldname, value, store));
-            if (facets && !prefixes[j].isEmpty()) {
+            if (facets && !prefixes[j].isEmpty() && i == j) {
                 doc.add(new FacetField(fieldname + ".facet", value));
             }
         }

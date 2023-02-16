@@ -75,6 +75,15 @@ class DocumentUtilTest(unittest.TestCase):
         self.assertEqual('base.tag.facet', facet.dim)
         self.assertEqual(['analyse value'], list(facet.path))
 
+    def testAddStringFieldFacetsTopFieldOnly(self):
+        DocumentUtil.add_StringFields(self.doc, self.fieldnames, 0, '.tag', 'analyse value', Field.Store.NO, True)
+        fields = [f for f in self.doc.getFields()]
+        self.assertEqual(['base.tag', 'dummy'], [f.name() for f in fields])
+        self.assertEqual(['analyse value'], tokens(fields[0]))
+        facet = FacetField.cast_(fields[1])
+        self.assertEqual('base.tag.facet', facet.dim)
+        self.assertEqual(['analyse value'], list(facet.path))
+
     def testAddTextField(self):
         DocumentUtil.add_TextFields(self.doc, self.fieldnames, 2, '.tag', 'analyse value', Field.Store.NO, 10, self.analyzer, False)
         fields = [f for f in self.doc.getFields()]
