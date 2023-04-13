@@ -1,4 +1,3 @@
-src/build
+build
 *.egg-info/
-src/root
 metastreams_lucene

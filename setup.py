@@ -50,7 +50,7 @@ class CompileJccExtension(install):
     def run(self):
         root = join(dirname(__file__), self.root)
         import os
-        os.system(f"cd src; ./build.sh {root}")
+        os.system(f"./compile-meresco-jar --target={root} --version=1.7.2.2")
         install.run(self)
 
 for path, dirs, files in walk('doc'):
@@ -67,8 +67,8 @@ setup(
     url = 'https://seecr.nl',
     author = 'Seecr (Seek You Too B.V.)',
     author_email = 'info@seecr.nl',
-    description = 'A set of components and tools to integrate Lucene into Metastreams',
-    long_description = '"Metastream Lucene" is a set of components and tools to integrate Lucene into Metastreams',
+    description = 'Python wrappers for components in Meresco Lucene',
+    long_description = '"Metastream Lucene" is a set of python wrappers for components in Meresco Lucene',
     license = 'GPLv2',
     platforms = 'all',
 )

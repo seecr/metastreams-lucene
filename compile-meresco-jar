@@ -25,57 +25,28 @@
 
 function show_usage {
     echo "Usage: $(basename $0)
-    --path=<'src' directory>
-    --name=<package name>
-    --package=<java package path>
-    --jcc=<jcc version>
-    --lucene=<lucene version>
-    --java_home=<jdk path>
-    --target=<output path>"
+    --target=<output path>
+    --version=<meresco-lucene version>"
 }
 
 TEMP=$(getopt \
     --options "" \
-    --long path::,name::,package::,jcc::,lucene::,target::,java_home:: \
+    --long target::,version:: \
     -n "$0" -- "$@")
 
 eval set -- "$TEMP"
 while true
 do
     case "$1" in
-        --path)
-            case "$2" in
-                "") show_usage ; exit 1 ;;
-                *) mydir=$2 ; shift 2 ;;
-            esac ;;
-        --name)
-            case "$2" in
-                "") show_usage ; exit 1 ;;
-                *) PKGNAME=$2 ; shift 2 ;;
-            esac ;;
-        --package)
-            case "$2" in
-                "") show_usage ; exit 1 ;;
-                *) PKGPATH=$2 ; shift 2;;
-            esac ;;
-        --jcc)
-            case "$2" in
-                "") show_usage ; exit 1 ;;
-                *) JCC_REQ_VERSION=$2 ; shift 2;;
-            esac ;;
-        --lucene)
-            case "$2" in
-                "") show_usage ; exit 1 ;;
-                *) LUCENE_VERSION=$2 ; shift 2;;
-            esac ;;
         --target)
             case "$2" in
-                *) TARGET=$2 ; shift 2;;
+                "") show_usage ; exit 1 ;;
+                *) TARGET=$2 ; shift 2 ;;
             esac ;;
-        --java_home)
+        --version)
             case "$2" in
-                "") JAVA_HOME="" ; shift 2;;
-                *) JAVA_HOME=$2 ; shift 2;;
+                "") show_usage ; exit 1 ;;
+                *) VERSION=$2 ; shift 2 ;;
             esac ;;
         --) shift ; break ;;
         *) echo "Unknown option specified." ; exit 1 ;;
@@ -83,18 +54,19 @@ do
 done
 
 set -o errexit
-
-if [ -z "${mydir}" -o -z "${PKGNAME}" -o -z "${PKGPATH}" -o -z "${JCC_REQ_VERSION}" -o -z "${LUCENE_VERSION}" -o -z "${TARGET}" ]
-then
+if [ -z "${TARGET}" -o -z "${VERSION}" ]; then
     show_usage
     exit 1
 fi
 
-test -d "${mydir}" || { echo "${mydir} not found"; exit 1; }
-
+mydir=$(cd $(dirname $0); pwd)
 buildDir=$mydir/build
 
-_PKGNAME=$(echo ${PKGNAME} | tr '-' '_')
+JAR_FILE=/usr/share/java/meresco-lucene/meresco-lucene-${VERSION}.jar
+if [ ! -f "${JAR_FILE}" ]; then
+    echo "{JAR_FILE} not found!"
+    exit 1
+fi
 
 PYTHON=python3
 pythonVersion=$(${PYTHON} --version 2>&1 | awk '{print $2}' | cut -d. -f-2)
@@ -104,21 +76,7 @@ if [ -f /etc/debian_version ]; then
     pythonPackagesDir=/usr/lib/python${pythonMajorVersion}/dist-packages
 fi
 
-JCC_VERSION=$(${PYTHON} -c "from jcc.config import VERSION; print(VERSION)")
-if [ "${JCC_VERSION}" != "${JCC_REQ_VERSION}" ]; then
-    echo "JCC ${JCC_REQ_VERSION} is required. ${JCC_VERSION} found."
-    exit 1
-fi
-
-if [ -z "${JAVA_HOME}" ]; then
-    test -f /etc/debian_version && JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-    test -f /etc/redhat-release && JAVA_HOME=/usr/lib/jvm/java
-fi
-if [ -z "${JAVA_HOME}" ]; then
-    echo "Unable to determine JAVA_HOME"
-    exit 0
-fi
-
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 if [ ! -d "${JAVA_HOME}" ]; then
     echo "${JAVA_HOME} does not exist"
     exit 0
@@ -130,7 +88,9 @@ javac=${JAVA_HOME}/bin/javac
 luceneJarDir=${pythonPackagesDir}/lucene
 
 classpath=${luceneJarDir}/lucene-core-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-analyzers-common-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-facet-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-queries-${LUCENE_VERSION}.jar:${luceneJarDir}/lucene-misc-${LUCENE_VERSION}.jar
-
+classpath=${classpath}:/usr/share/java/meresco-lucene/commons-math3-3.4.1.jar
+classpath=${classpath}:/usr/share/java/meresco-lucene/javax.json-1.0.4.jar
+export CLASSPATH=${classpath}
 
 test -d "${TARGET}" && rm -rf "${TARGET}"
 test -d "${TARGET}" || mkdir "${TARGET}"
@@ -138,16 +98,31 @@ test -d "${TARGET}" || mkdir "${TARGET}"
 rm -rf $buildDir
 mkdir --parents $buildDir
 
-${javac} -cp ${classpath} -d ${buildDir} ${PKGPATH}/*.java
-(cd $buildDir; jar -c nl > $buildDir/${PKGNAME}.jar)
-
 python3 -m jcc.__main__ \
+    --classpath ${classpath} \
     --shared \
     --use_full_names \
     --import lucene \
     --arch x86_64 \
-    --jar ${buildDir}/${PKGNAME}.jar \
-    --python ${_PKGNAME} \
+    --jar ${JAR_FILE} \
+    --exclude org.meresco.lucene.http.PrefixSearchHandler \
+    --exclude org.meresco.lucene.http.AbstractMerescoLuceneHandler \
+    --exclude org.meresco.lucene.http.NumerateHandler \
+    --exclude org.meresco.lucene.http.ComposedQueryHandler \
+    --exclude org.meresco.lucene.http.OtherHandler \
+    --exclude org.meresco.lucene.http.QueryParameters \
+    --exclude org.meresco.lucene.http.SettingsHandler \
+    --exclude org.meresco.lucene.http.ExportKeysHandler \
+    --exclude org.meresco.lucene.http.CommitHandler \
+    --exclude org.meresco.lucene.http.LuceneHttpServer \
+    --exclude org.meresco.lucene.http.UpdateHandler \
+    --exclude org.meresco.lucene.http.DeleteHandler \
+    --exclude org.meresco.lucene.http.QueryHandler \
+    --exclude org.meresco.lucene.LuceneShutdown \
+    --exclude org.meresco.lucene.suggestion.SuggestionHandler \
+    --exclude org.meresco.lucene.suggestion.SuggestionShutdown \
+    --exclude org.meresco.lucene.suggestion.SuggestionHttpServer \
+    --python metastreams_lucene \
     --build \
     --install \
-    --root "${TARGET}"
+    --root "${TARGET}" \
